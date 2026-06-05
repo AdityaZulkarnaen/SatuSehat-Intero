@@ -1,80 +1,94 @@
-// Penyimpanan data pasien lokal (buatan sendiri) ke file JSON.
-// Dipakai untuk fitur "tambah pasien" karena SatuSehat tidak mengizinkan
-// pembuatan Patient sembarangan (data resmi berasal dari Dukcapil).
+// Penyimpanan data pasien lokal (buatan sendiri) ke database SQLite.
+// Memakai modul bawaan Node.js `node:sqlite` (perlu flag --experimental-sqlite,
+// sudah diset di npm script) sehingga tidak butuh kompilasi native.
+//
+// SatuSehat tidak mengizinkan pembuatan Patient sembarangan (data resmi berasal
+// dari Dukcapil), jadi pasien tambahan disimpan di DB lokal ini.
 
 const fs = require('fs');
 const path = require('path');
+const { DatabaseSync } = require('node:sqlite');
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
-const FILE = path.join(DATA_DIR, 'patients.json');
+const DB_FILE = path.join(DATA_DIR, 'patients.db');
 
-function ensureFile() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(FILE)) fs.writeFileSync(FILE, '[]', 'utf-8');
-}
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-function readAll() {
-  ensureFile();
-  try {
-    return JSON.parse(fs.readFileSync(FILE, 'utf-8')) || [];
-  } catch {
-    return [];
-  }
-}
+const db = new DatabaseSync(DB_FILE);
 
-function writeAll(list) {
-  ensureFile();
-  fs.writeFileSync(FILE, JSON.stringify(list, null, 2), 'utf-8');
-}
+// Buat tabel jika belum ada.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS patients (
+    id        TEXT PRIMARY KEY,
+    name      TEXT NOT NULL,
+    nik       TEXT,
+    gender    TEXT NOT NULL,
+    birthDate TEXT NOT NULL,
+    address   TEXT,
+    phone     TEXT,
+    active    INTEGER NOT NULL DEFAULT 1,
+    createdAt TEXT NOT NULL
+  )
+`);
 
-// Bentuk data pasien lokal disamakan dengan hasil normalisasi FHIR
-// supaya bisa ditampilkan memakai komponen kartu yang sama di frontend.
-function buildPatient(input) {
-  const id = `LOCAL-${Date.now()}`;
+// Ubah satu baris DB menjadi bentuk pasien yang sama dengan hasil normalisasi
+// FHIR, supaya bisa ditampilkan memakai komponen kartu yang sama di frontend.
+function rowToPatient(row) {
+  if (!row) return null;
   const identifiers = [];
-  if (input.nik) identifiers.push({ label: 'NIK', value: input.nik });
-  identifiers.push({ label: 'Local ID', value: id });
+  if (row.nik) identifiers.push({ label: 'NIK', value: row.nik });
+  identifiers.push({ label: 'Local ID', value: row.id });
 
   const telecom = [];
-  if (input.phone) telecom.push(`phone: ${input.phone}`);
+  if (row.phone) telecom.push(`phone: ${row.phone}`);
 
   return {
-    id,
+    id: row.id,
     source: 'local',
-    name: input.name,
-    nik: input.nik || null,
-    gender: input.gender,
-    birthDate: input.birthDate,
-    active: true,
-    address: input.address || null,
+    name: row.name,
+    nik: row.nik || null,
+    gender: row.gender,
+    birthDate: row.birthDate,
+    active: row.active === 1,
+    address: row.address || null,
     telecom,
     identifiers,
-    createdAt: new Date().toISOString(),
+    createdAt: row.createdAt,
   };
 }
 
 function create(input) {
-  const list = readAll();
-  const patient = buildPatient(input);
-  list.unshift(patient);
-  writeAll(list);
-  return patient;
+  const id = `LOCAL-${Date.now()}`;
+  const createdAt = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO patients (id, name, nik, gender, birthDate, address, phone, active, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`
+  ).run(
+    id,
+    input.name,
+    input.nik || null,
+    input.gender,
+    input.birthDate,
+    input.address || null,
+    input.phone || null,
+    createdAt
+  );
+  return getById(id);
 }
 
 function list() {
-  return readAll();
+  const rows = db.prepare('SELECT * FROM patients ORDER BY createdAt DESC').all();
+  return rows.map(rowToPatient);
 }
 
 function getById(id) {
-  return readAll().find((p) => p.id === id) || null;
+  const row = db.prepare('SELECT * FROM patients WHERE id = ?').get(id);
+  return rowToPatient(row);
 }
 
 function remove(id) {
-  const list = readAll();
-  const next = list.filter((p) => p.id !== id);
-  const removed = next.length !== list.length;
-  writeAll(next);
-  return removed;
+  const info = db.prepare('DELETE FROM patients WHERE id = ?').run(id);
+  return info.changes > 0;
 }
 
 module.exports = { create, list, getById, remove };

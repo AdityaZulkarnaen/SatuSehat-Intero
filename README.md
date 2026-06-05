@@ -19,7 +19,8 @@ Proxy SatuSehat (data resmi, read-only):
 - `GET /api/patient?name=<nama>&gender=<male|female>&birthdate=<YYYY-MM-DD>` — cari via demografi
 - `GET /api/patient/:id` — ambil pasien via IHS Number
 
-Pasien lokal (data buatan sendiri, disimpan ke `be-kelompok6/data/patients.json`):
+Pasien lokal (data buatan sendiri, disimpan ke SQLite `be-kelompok6/data/patients.db`
+memakai modul bawaan Node.js `node:sqlite`):
 - `POST /api/local-patient` — tambah pasien (body: name, gender, birthDate, nik?, address?, phone?)
 - `GET /api/local-patient` — daftar pasien tersimpan
 - `GET /api/local-patient/:id` — ambil satu pasien lokal
@@ -34,7 +35,7 @@ Backend membaca `be-kelompok6/.env` (lihat `.env.example`). Environment yang dip
 **sandbox**: `https://api-satusehat-stg.dto.kemkes.go.id`.
 
 ## Prasyarat
-- Node.js dan npm (disarankan Node.js 18+)
+- Node.js dan npm — **Node.js 22.5+** (backend memakai SQLite bawaan `node:sqlite`)
 - Git (opsional, untuk clone)
 
 ## Instalasi
