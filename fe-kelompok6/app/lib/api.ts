@@ -45,3 +45,35 @@ export async function getById(id: string) {
   const res = await fetch(`${API_URL}/api/patient/${encodeURIComponent(id)}`);
   return handle<{ patient: Patient }>(res);
 }
+
+// ---- Pasien lokal (tambah & simpan sendiri) ----
+
+export type NewPatient = {
+  name: string;
+  gender: string;
+  birthDate: string;
+  nik?: string;
+  address?: string;
+  phone?: string;
+};
+
+export async function createLocalPatient(input: NewPatient) {
+  const res = await fetch(`${API_URL}/api/local-patient`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return handle<{ message: string; patient: Patient }>(res);
+}
+
+export async function listLocalPatients() {
+  const res = await fetch(`${API_URL}/api/local-patient`);
+  return handle<{ patients: Patient[] }>(res);
+}
+
+export async function deleteLocalPatient(id: string) {
+  const res = await fetch(`${API_URL}/api/local-patient/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  return handle<{ message: string }>(res);
+}

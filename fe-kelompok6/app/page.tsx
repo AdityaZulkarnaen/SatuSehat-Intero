@@ -8,13 +8,17 @@ import {
   type Patient,
 } from "./lib/api";
 import PatientCard from "./components/PatientCard";
+import AddPatientForm from "./components/AddPatientForm";
+import SavedPatients from "./components/SavedPatients";
 
-type Mode = "nik" | "demografi" | "id";
+type Mode = "nik" | "demografi" | "id" | "tambah" | "tersimpan";
 
 const tabs: { key: Mode; label: string }[] = [
   { key: "nik", label: "Cari via NIK" },
   { key: "demografi", label: "Cari via Nama" },
   { key: "id", label: "Cari via IHS Number" },
+  { key: "tambah", label: "Tambah Pasien" },
+  { key: "tersimpan", label: "Data Tersimpan" },
 ];
 
 export default function Home() {
@@ -28,6 +32,10 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [patients, setPatients] = useState<Patient[] | null>(null);
+  // Dipakai untuk memicu refresh daftar "Data Tersimpan" setelah simpan.
+  const [savedRefresh, setSavedRefresh] = useState(0);
+
+  const isSearchMode = mode === "nik" || mode === "demografi" || mode === "id";
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -64,7 +72,7 @@ export default function Home() {
     <main className="mx-auto w-full max-w-3xl px-5 py-10">
       <header className="mb-8">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-          SatuSehat — Pencarian Pasien
+          SatuSehat Pencarian Pasien
         </h1>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           Konsumsi FHIR Patient API (sandbox) melalui backend proxy. Kelompok 6.
@@ -72,7 +80,7 @@ export default function Home() {
       </header>
 
       {/* Tab pemilihan mode pencarian */}
-      <div className="mb-5 flex gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
+      <div className="mb-5 flex flex-wrap gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800">
         {tabs.map((t) => (
           <button
             key={t.key}
@@ -81,7 +89,7 @@ export default function Home() {
               setPatients(null);
               setError(null);
             }}
-            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 min-w-[110px] rounded-md px-3 py-2 text-sm font-medium transition-colors ${
               mode === t.key
                 ? "bg-white text-sky-600 shadow-sm dark:bg-zinc-950 dark:text-sky-400"
                 : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
@@ -92,6 +100,7 @@ export default function Home() {
         ))}
       </div>
 
+      {isSearchMode && (
       <form
         onSubmit={handleSearch}
         className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
@@ -165,8 +174,23 @@ export default function Home() {
           {loading ? "Mencari..." : "Cari Pasien"}
         </button>
       </form>
+      )}
 
-      {/* Hasil */}
+      {/* Tambah pasien baru */}
+      {mode === "tambah" && (
+        <AddPatientForm
+          onSaved={() => {
+            setSavedRefresh((n) => n + 1);
+            setMode("tersimpan");
+          }}
+        />
+      )}
+
+      {/* Daftar pasien tersimpan */}
+      {mode === "tersimpan" && <SavedPatients refreshKey={savedRefresh} />}
+
+      {/* Hasil pencarian */}
+      {isSearchMode && (
       <section className="mt-6 space-y-4">
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
@@ -191,6 +215,7 @@ export default function Home() {
           </>
         )}
       </section>
+      )}
     </main>
   );
 }

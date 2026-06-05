@@ -14,9 +14,20 @@ secret, frontend hanya memanggil backend.
 - fe-kelompok6: frontend web (Next.js + React + Tailwind)
 
 ## Endpoint Backend
+Proxy SatuSehat (data resmi, read-only):
 - `GET /api/patient?nik=<NIK>` — cari pasien via NIK
 - `GET /api/patient?name=<nama>&gender=<male|female>&birthdate=<YYYY-MM-DD>` — cari via demografi
 - `GET /api/patient/:id` — ambil pasien via IHS Number
+
+Pasien lokal (data buatan sendiri, disimpan ke `be-kelompok6/data/patients.json`):
+- `POST /api/local-patient` — tambah pasien (body: name, gender, birthDate, nik?, address?, phone?)
+- `GET /api/local-patient` — daftar pasien tersimpan
+- `GET /api/local-patient/:id` — ambil satu pasien lokal
+- `DELETE /api/local-patient/:id` — hapus pasien lokal
+
+> Catatan: SatuSehat tidak mengizinkan pembuatan Patient sembarangan (data resmi
+> berasal dari Dukcapil/NIK terverifikasi), sehingga fitur "Tambah Pasien"
+> menyimpan data secara lokal di backend.
 
 ## Kredensial (SatuSehat)
 Backend membaca `be-kelompok6/.env` (lihat `.env.example`). Environment yang dipakai adalah
