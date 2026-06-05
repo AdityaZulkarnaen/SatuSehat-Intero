@@ -1,11 +1,26 @@
 # SatuSehat-Intero
 
 ## Ringkasan
-Proyek tugas Interoperabilitas Kelompok 6 yang terdiri dari backend Express dan frontend Next.js.
+Proyek tugas Interoperabilitas Kelompok 6: frontend Next.js untuk pencarian pasien yang
+mengonsumsi **SatuSehat FHIR Patient API** (environment sandbox) melalui backend Express
+sebagai proxy. Backend menangani OAuth2 (client credentials) dan menyembunyikan client
+secret, frontend hanya memanggil backend.
 
 ## Struktur
-- be-kelompok6: backend API (Express)
-- fe-kelompok6: frontend web (Next.js + React)
+- be-kelompok6: backend API (Express) — proxy ke SatuSehat
+  - `services/satusehat.js`: ambil & cache access token, request FHIR Patient
+  - `services/normalize.js`: ubah resource FHIR menjadi objek sederhana
+  - `routes/patient.js`: endpoint `/api/patient`
+- fe-kelompok6: frontend web (Next.js + React + Tailwind)
+
+## Endpoint Backend
+- `GET /api/patient?nik=<NIK>` — cari pasien via NIK
+- `GET /api/patient?name=<nama>&gender=<male|female>&birthdate=<YYYY-MM-DD>` — cari via demografi
+- `GET /api/patient/:id` — ambil pasien via IHS Number
+
+## Kredensial (SatuSehat)
+Backend membaca `be-kelompok6/.env` (lihat `.env.example`). Environment yang dipakai adalah
+**sandbox**: `https://api-satusehat-stg.dto.kemkes.go.id`.
 
 ## Prasyarat
 - Node.js dan npm (disarankan Node.js 18+)
