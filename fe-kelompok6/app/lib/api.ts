@@ -46,34 +46,91 @@ export async function getById(id: string) {
   return handle<{ patient: Patient }>(res);
 }
 
-// ---- Pasien lokal (tambah & simpan sendiri) ----
+// ---- Practitioner (master data dokter SatuSehat) ----
 
-export type NewPatient = {
+export type Practitioner = {
+  id: string;
   name: string;
+  fullName: string;
   gender: string;
-  birthDate: string;
-  nik?: string;
-  address?: string;
-  phone?: string;
 };
 
-export async function createLocalPatient(input: NewPatient) {
-  const res = await fetch(`${API_URL}/api/local-patient`, {
+export async function listPractitioners() {
+  const res = await fetch(`${API_URL}/api/practitioner`);
+  return handle<{ practitioners: Practitioner[] }>(res);
+}
+
+// ---- Encounter / Catatan Kunjungan ----
+
+export type Encounter = {
+  id: string;
+  patient: {
+    name: string;
+    nik: string | null;
+    gender: string;
+    birthDate: string;
+    ihs: string | null;
+  };
+  practitioner: { id: string; name: string };
+  visitDate: string;
+  visitClass: string;
+  visitClassDisplay: string;
+  status: string;
+  complaint: string | null;
+  fhir: unknown;
+  createdAt: string;
+};
+
+export type NewEncounter = {
+  patientName: string;
+  patientGender: string;
+  patientBirthDate: string;
+  patientNik?: string;
+  patientIhs?: string;
+  practitionerId: string;
+  visitDate: string;
+  visitClass: string;
+  status: string;
+  complaint?: string;
+};
+
+export async function createEncounter(input: NewEncounter) {
+  const res = await fetch(`${API_URL}/api/encounter`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  return handle<{ message: string; patient: Patient }>(res);
+  return handle<{ message: string; encounter: Encounter }>(res);
 }
 
-export async function listLocalPatients() {
-  const res = await fetch(`${API_URL}/api/local-patient`);
-  return handle<{ patients: Patient[] }>(res);
+export async function listEncounters() {
+  const res = await fetch(`${API_URL}/api/encounter`);
+  return handle<{ encounters: Encounter[] }>(res);
 }
 
-export async function deleteLocalPatient(id: string) {
-  const res = await fetch(`${API_URL}/api/local-patient/${encodeURIComponent(id)}`, {
+export async function deleteEncounter(id: string) {
+  const res = await fetch(`${API_URL}/api/encounter/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
   return handle<{ message: string }>(res);
+}
+
+// Kunjungan resmi pasien dari SatuSehat (Encounter API, read-only).
+export type SatuSehatEncounter = {
+  id: string;
+  status: string;
+  class: string;
+  classDisplay: string;
+  patient: string;
+  practitioner: string;
+  start: string | null;
+  end: string | null;
+  reason: string | null;
+};
+
+export async function getPatientEncounters(ihsId: string) {
+  const res = await fetch(
+    `${API_URL}/api/patient/${encodeURIComponent(ihsId)}/encounter`
+  );
+  return handle<{ total: number; encounters: SatuSehatEncounter[] }>(res);
 }

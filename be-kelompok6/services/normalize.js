@@ -54,4 +54,48 @@ function normalizeBundle(bundle) {
   return entries.map((e) => normalizePatient(e.resource));
 }
 
-module.exports = { normalizePatient, normalizeBundle };
+// --- Practitioner ---
+
+function normalizePractitioner(resource) {
+  if (!resource) return null;
+  const name = resource.name?.[0];
+  const prefix = name?.prefix?.join(' ') || '';
+  const text = name?.text || '';
+  return {
+    id: resource.id,
+    name: text,
+    fullName: [prefix, text].filter(Boolean).join(' '),
+    gender: resource.gender || '-',
+  };
+}
+
+// --- Encounter ---
+
+function normalizeEncounter(resource) {
+  if (!resource) return null;
+  const participant = resource.participant?.[0]?.individual;
+  return {
+    id: resource.id,
+    status: resource.status || '-',
+    class: resource.class?.code || '-',
+    classDisplay: resource.class?.display || resource.class?.code || '-',
+    patient: resource.subject?.display || resource.subject?.reference || '-',
+    practitioner: participant?.display || participant?.reference || '-',
+    start: resource.period?.start || null,
+    end: resource.period?.end || null,
+    reason: resource.reasonCode?.map((r) => r.text).filter(Boolean).join(', ') || null,
+  };
+}
+
+function normalizeEncounterBundle(bundle) {
+  const entries = bundle?.entry || [];
+  return entries.map((e) => normalizeEncounter(e.resource));
+}
+
+module.exports = {
+  normalizePatient,
+  normalizeBundle,
+  normalizePractitioner,
+  normalizeEncounter,
+  normalizeEncounterBundle,
+};

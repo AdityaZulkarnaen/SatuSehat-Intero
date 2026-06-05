@@ -8,13 +8,25 @@ const CLIENT_SECRET = process.env.SATUSEHAT_CLIENT_SECRET;
 
 // Cache token di memori agar tidak minta token baru tiap request.
 let tokenCache = { accessToken: null, expiresAt: 0 };
+// Menampung permintaan token yang sedang berjalan supaya beberapa request
+// bersamaan tidak meminta token berkali-kali (dedupe).
+let pendingToken = null;
 
 async function getAccessToken() {
   // Pakai token lama jika masih berlaku (beri buffer 60 detik).
   if (tokenCache.accessToken && Date.now() < tokenCache.expiresAt - 60_000) {
     return tokenCache.accessToken;
   }
+  // Jika sudah ada permintaan token berjalan, ikut menunggu yang itu.
+  if (pendingToken) return pendingToken;
 
+  pendingToken = fetchToken().finally(() => {
+    pendingToken = null;
+  });
+  return pendingToken;
+}
+
+async function fetchToken() {
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: CLIENT_ID,
@@ -77,4 +89,25 @@ function getById(id) {
   return fhirRequest(`/Patient/${encodeURIComponent(id)}`);
 }
 
-module.exports = { getAccessToken, searchByNik, searchByDemographics, getById };
+// --- Practitioner (master data dokter) ---
+
+// Ambil satu dokter berdasarkan IHS Number practitioner.
+function getPractitioner(id) {
+  return fhirRequest(`/Practitioner/${encodeURIComponent(id)}`);
+}
+
+// --- Encounter (kunjungan) ---
+
+// Ambil daftar kunjungan resmi milik seorang pasien dari SatuSehat.
+function getEncountersByPatient(ihsId) {
+  return fhirRequest(`/Encounter?subject=Patient/${encodeURIComponent(ihsId)}`);
+}
+
+module.exports = {
+  getAccessToken,
+  searchByNik,
+  searchByDemographics,
+  getById,
+  getPractitioner,
+  getEncountersByPatient,
+};

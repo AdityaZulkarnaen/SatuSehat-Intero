@@ -8,8 +8,8 @@ import {
   type Patient,
 } from "./lib/api";
 import PatientCard from "./components/PatientCard";
-import AddPatientForm from "./components/AddPatientForm";
-import SavedPatients from "./components/SavedPatients";
+import VisitForm from "./components/VisitForm";
+import VisitList from "./components/VisitList";
 
 type Mode = "nik" | "demografi" | "id" | "tambah" | "tersimpan";
 
@@ -17,8 +17,8 @@ const tabs: { key: Mode; label: string }[] = [
   { key: "nik", label: "Cari via NIK" },
   { key: "demografi", label: "Cari via Nama" },
   { key: "id", label: "Cari via IHS Number" },
-  { key: "tambah", label: "Tambah Pasien" },
-  { key: "tersimpan", label: "Data Tersimpan" },
+  { key: "tambah", label: "Tambah Kunjungan" },
+  { key: "tersimpan", label: "Catatan Kunjungan" },
 ];
 
 export default function Home() {
@@ -75,7 +75,7 @@ export default function Home() {
           SatuSehat Pencarian Pasien
         </h1>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Konsumsi FHIR Patient API (sandbox) melalui backend proxy. Kelompok 6.
+          Konsumsi FHIR API SatuSehat (Patient, Practitioner, Encounter) via backend proxy. Kelompok 6.
         </p>
       </header>
 
@@ -176,9 +176,9 @@ export default function Home() {
       </form>
       )}
 
-      {/* Tambah pasien baru */}
+      {/* Tambah catatan kunjungan baru */}
       {mode === "tambah" && (
-        <AddPatientForm
+        <VisitForm
           onSaved={() => {
             setSavedRefresh((n) => n + 1);
             setMode("tersimpan");
@@ -186,8 +186,8 @@ export default function Home() {
         />
       )}
 
-      {/* Daftar pasien tersimpan */}
-      {mode === "tersimpan" && <SavedPatients refreshKey={savedRefresh} />}
+      {/* Daftar catatan kunjungan tersimpan */}
+      {mode === "tersimpan" && <VisitList refreshKey={savedRefresh} />}
 
       {/* Hasil pencarian */}
       {isSearchMode && (

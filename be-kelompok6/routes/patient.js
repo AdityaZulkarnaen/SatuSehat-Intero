@@ -1,6 +1,10 @@
 const express = require('express');
 const satusehat = require('../services/satusehat');
-const { normalizePatient, normalizeBundle } = require('../services/normalize');
+const {
+  normalizePatient,
+  normalizeBundle,
+  normalizeEncounterBundle,
+} = require('../services/normalize');
 
 const router = express.Router();
 
@@ -32,6 +36,17 @@ router.get('/:id', async (req, res) => {
   try {
     const resource = await satusehat.getById(req.params.id);
     res.json({ patient: normalizePatient(resource) });
+  } catch (err) {
+    forwardError(res, err);
+  }
+});
+
+// GET /api/patient/:id/encounter -> kunjungan resmi pasien dari SatuSehat.
+router.get('/:id/encounter', async (req, res) => {
+  try {
+    const bundle = await satusehat.getEncountersByPatient(req.params.id);
+    const encounters = normalizeEncounterBundle(bundle);
+    res.json({ total: bundle.total ?? encounters.length, encounters });
   } catch (err) {
     forwardError(res, err);
   }
